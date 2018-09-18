@@ -9,24 +9,35 @@ im = imread([folder NO 'shot.jpg']);
 % input the Rotation and Trans Martix of RGB camera
 [rgbR,rgbT] = importRTpara([folder NO 'shot_RT.txt']);
 [Rx,Ry,Rz]=RotationM(rgbR);
-R11 = Rz*Ry*Rx;
+RotateRGB = Rz*Ry*Rx;
 % input the intrinsics parameter of RGB camera
 K = importIntrinsics([folder 'camera_Intr.txt']);
 
-% deform the image
-deform_Im = deformation(im,K);
-
-% input the Point Cloud Data
-PointCloud = importPLY([folder NO '.ply']);
-% delete the point(0,0,0)
-Zind = find(PointCloud(:,1)==0);
-PointCloud(Zind,:) = [];
-[m,n] = size(PointCloud);
+input the Point Cloud Data
+ptCloud = pcread([folder NO '.ply']);
+pcshow(ptCloud);
+hold on
 
 % input the Rotation and Trans Martix of Depth camera
 [pcR,pcT] = importRTpara([folder NO 'pc_RT.txt']);
 [Rxp,Ryp,Rzp]=RotationM(pcR);
-R22 = Rzp*Ryp*Rxp;
+RotatePc = Rzp*Ryp*Rxp;
+
+% Visualiza the camera in plot
+cameraSize = 0.0005;
+orientRGB = RotateRGB';
+locRGB = -rgbT'*orientRGB;
+orientPc = RotatePc';
+locPc = -pcT'*orientPc;
+
+plotCamera('Location',locRGB,'Orientation',orientRGB,'Size',cameraSize,'Color','r', 'Label','RGB','Opacity','0'); 
+hold on
+plotCamera('Location',locPc,'Orientation',orientPc,'Size',cameraSize,'Color','r', 'Label','D','Opacity','0'); 
+grid on
+xlabel('X');
+ylabel('Y');
+zlabel('Z');
+
 % compute the projection matrix from depth to RGB
 % rgbP = eye(4);
 % pcP = eye(4);
@@ -42,6 +53,8 @@ x2 = K(1:3,1:3)*x1;
 
 x3 = abs(x2);
 
+% post-processing the image
+deform_Im = deformation(im,K);
 deform_Im1 = fliplr(deform_Im);
 figure
 imagesc(deform_Im1);
